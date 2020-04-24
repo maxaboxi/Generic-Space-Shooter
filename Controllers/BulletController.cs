@@ -7,6 +7,7 @@ using spacerpg.Enums;
 using spacerpg.General;
 using spacerpg.Interfaces;
 using spacerpg.Models;
+using System;
 using System.Linq;
 
 namespace spacerpg.Controllers
@@ -37,7 +38,7 @@ namespace spacerpg.Controllers
         }
 
         /// <summary>
-        /// Handles bullet movemet and collision
+        /// Handles bullet movement and collision
         /// </summary>
         /// <param name="gameTime"></param>
         public void Update(GameTime gameTime)
@@ -70,54 +71,95 @@ namespace spacerpg.Controllers
         /// <param name="gameTime">Gametime used for shooting cooldown</param>
         private void EnemyShoots(GameTime gameTime)
         {
+            var enemiesAlive = _enemyListModel.Enemies.Where(e => !e.IsDead).ToList();
             foreach (var enemy in _enemyListModel.Enemies)
             {
-                float y = 0;
-                // Shoot up
-                if (_playerModel.Position.Y <= enemy.Position.Y)
-                {
-                    y -= EnemyBulletDistance;
-                }
-
-                // Shoot down
-                if (_playerModel.Position.Y >= enemy.Position.Y)
-                {
-                    y += EnemyBulletDistance;
-                }
-
                 enemy.ShootCooldown += (float)gameTime.ElapsedGameTime.TotalMilliseconds;
 
                 if (_playerModel.Stage <= 20)
                 {
-                    if (!enemy.IsDead && !enemy.IsBoss && enemy.ShootCooldown >= 2000)
-                    {
-
-                        _bulletListModel.Bullets.Add(new BulletModel(new Vector2(enemy.Position.X + 25, enemy.Position.Y), 0, true, true, false, Color.Yellow, enemy.Damage, new Vector2(0, y)));
-                        enemy.ShootCooldown = 0f;
-                    }
-
-                    if (!enemy.IsDead && enemy.IsBoss && enemy.ShootCooldown >= 1000)
-                    {
-                        _bulletListModel.Bullets.Add(new BulletModel(new Vector2(enemy.Position.X + 25, enemy.Position.Y), 0, true, true, true, Color.Yellow, enemy.Damage, new Vector2(0, y * 2)));
-                        enemy.ShootCooldown = 0f;
-                    }
+                    ShootUpOrDown(enemy);
+                }
+                else if (_playerModel.Stage > 20 && _playerModel.Stage <= 40)
+                {
+                    ShootUpAndDown(enemy);
+                }
+                else if (_playerModel.Stage > 40 && enemiesAlive.Count <= 7)
+                {
+                    ShootEveryDirection(enemy);
                 }
                 else
                 {
-                    if (!enemy.IsDead && !enemy.IsBoss && enemy.ShootCooldown >= 1000)
-                    {
-
-                        _bulletListModel.Bullets.Add(new BulletModel(new Vector2(enemy.Position.X + 25, enemy.Position.Y), 0, true, true, false, Color.Yellow, enemy.Damage, new Vector2(0, y)));
-                        enemy.ShootCooldown = 0f;
-                    }
-
-                    if (!enemy.IsDead && enemy.IsBoss && enemy.ShootCooldown >= 500)
-                    {
-                        _bulletListModel.Bullets.Add(new BulletModel(new Vector2(enemy.Position.X + 25, enemy.Position.Y), 0, true, true, true, Color.Yellow, enemy.Damage, new Vector2(0, y * 2)));
-                        enemy.ShootCooldown = 0f;
-                    }
+                    ShootUpAndDown(enemy);
                 }
 
+            }
+        }
+
+        private void ShootUpOrDown(EnemyModel enemy)
+        {
+            float y = 0;
+            // Shoot up
+            if (_playerModel.Position.Y <= enemy.Position.Y)
+            {
+                y -= EnemyBulletDistance;
+            }
+
+            // Shoot down
+            if (_playerModel.Position.Y >= enemy.Position.Y)
+            {
+                y += EnemyBulletDistance;
+            }
+
+            if (!enemy.IsDead && !enemy.IsBoss && enemy.ShootCooldown >= 2000)
+            {
+
+                _bulletListModel.Bullets.Add(new BulletModel(new Vector2(enemy.Position.X + 25, enemy.Position.Y), 0, true, true, false, Color.Yellow, enemy.Damage, new Vector2(0, y)));
+                enemy.ShootCooldown = 0f;
+            }
+
+            if (!enemy.IsDead && enemy.IsBoss && enemy.ShootCooldown >= 1000)
+            {
+                _bulletListModel.Bullets.Add(new BulletModel(new Vector2(enemy.Position.X + 25, enemy.Position.Y), 0, true, true, true, Color.Yellow, enemy.Damage, new Vector2(0, y * 2)));
+                enemy.ShootCooldown = 0f;
+            }
+        }
+
+        private void ShootUpAndDown(EnemyModel enemy)
+        {
+            if (!enemy.IsDead && !enemy.IsBoss && enemy.ShootCooldown >= 1000)
+            {
+                _bulletListModel.Bullets.Add(new BulletModel(new Vector2(enemy.Position.X + 25, enemy.Position.Y), 0, true, true, false, Color.Yellow, enemy.Damage, new Vector2(0, -EnemyBulletDistance)));
+                _bulletListModel.Bullets.Add(new BulletModel(new Vector2(enemy.Position.X + 25, enemy.Position.Y), 0, true, true, false, Color.Yellow, enemy.Damage, new Vector2(0, +EnemyBulletDistance)));
+                enemy.ShootCooldown = 0f;
+            }
+
+            if (!enemy.IsDead && enemy.IsBoss && enemy.ShootCooldown >= 500)
+            {
+                _bulletListModel.Bullets.Add(new BulletModel(new Vector2(enemy.Position.X + 25, enemy.Position.Y), 0, true, true, true, Color.Yellow, enemy.Damage, new Vector2(0, -EnemyBulletDistance * 2)));
+                _bulletListModel.Bullets.Add(new BulletModel(new Vector2(enemy.Position.X + 25, enemy.Position.Y), 0, true, true, true, Color.Yellow, enemy.Damage, new Vector2(0, +EnemyBulletDistance * 2)));
+                enemy.ShootCooldown = 0f;
+            }
+        }
+
+        private void ShootEveryDirection(EnemyModel enemy)
+        {
+            if (!enemy.IsDead && !enemy.IsBoss && enemy.ShootCooldown >= 1500)
+            {
+                _bulletListModel.Bullets.Add(new BulletModel(new Vector2(enemy.Position.X + 25, enemy.Position.Y), 0, true, true, false, Color.Yellow, enemy.Damage, new Vector2(+EnemyBulletDistance, 0)));
+                _bulletListModel.Bullets.Add(new BulletModel(new Vector2(enemy.Position.X + 25, enemy.Position.Y), 0, true, true, false, Color.Yellow, enemy.Damage, new Vector2(-EnemyBulletDistance, 0)));
+                _bulletListModel.Bullets.Add(new BulletModel(new Vector2(enemy.Position.X + 25, enemy.Position.Y), 0, true, true, false, Color.Yellow, enemy.Damage, new Vector2(0, -EnemyBulletDistance)));
+                _bulletListModel.Bullets.Add(new BulletModel(new Vector2(enemy.Position.X + 25, enemy.Position.Y), 0, true, true, false, Color.Yellow, enemy.Damage, new Vector2(0, +EnemyBulletDistance)));
+                enemy.ShootCooldown = 0f;
+            }
+
+            if (!enemy.IsDead && enemy.IsBoss && enemy.ShootCooldown >= 1000)
+            {
+                _bulletListModel.Bullets.Add(new BulletModel(new Vector2(enemy.Position.X + 25, enemy.Position.Y), 0, true, true, true, Color.Yellow, enemy.Damage, new Vector2(+EnemyBulletDistance, 0)));
+                _bulletListModel.Bullets.Add(new BulletModel(new Vector2(enemy.Position.X + 25, enemy.Position.Y), 0, true, true, true, Color.Yellow, enemy.Damage, new Vector2(-EnemyBulletDistance, 0)));
+                _bulletListModel.Bullets.Add(new BulletModel(new Vector2(enemy.Position.X + 25, enemy.Position.Y), 0, true, true, true, Color.Yellow, enemy.Damage, new Vector2(0, -EnemyBulletDistance * 2)));
+                _bulletListModel.Bullets.Add(new BulletModel(new Vector2(enemy.Position.X + 25, enemy.Position.Y), 0, true, true, true, Color.Yellow, enemy.Damage, new Vector2(0, +EnemyBulletDistance * 2)));
+                enemy.ShootCooldown = 0f;
             }
         }
 
@@ -168,7 +210,10 @@ namespace spacerpg.Controllers
                     }
                 }
 
-                if (bullet.Position.Y <= 0 || bullet.Position.Y >= VirtualScreenSize.Height * VirtualScreenSize.ScreenSizeMultiplier)
+                if (bullet.Position.Y < 0 
+                    || bullet.Position.Y >= VirtualScreenSize.Height * VirtualScreenSize.ScreenSizeMultiplier 
+                    || bullet.Position.X < 0 
+                    || bullet.Position.X >= VirtualScreenSize.Width * VirtualScreenSize.ScreenSizeMultiplier)
                 {
                     bullet.Visible = false;
                 }
