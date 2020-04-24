@@ -35,7 +35,7 @@ namespace spacerpg.Factories
             } else if (stageNumber > 10)
             {
                 extraEnemiesToAdd = 10;
-            } else if (stageNumber > 20)
+            } else if (stageNumber > 20 && stageNumber < 35)
             {
                 extraEnemiesToAdd = 15;
             } 
